@@ -1,0 +1,4 @@
+langchain==0.0.198
+boto3
+tiktoken
+openai==0.27.8

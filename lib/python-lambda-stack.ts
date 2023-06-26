@@ -1,52 +1,48 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
-import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
-import path = require('path');
-import { DockerImageAsset } from 'aws-cdk-lib/aws-ecr-assets';
+import * as path from 'path';
+import * as dotenv from 'dotenv';
+
+
+// Load environment variables from .env file
+dotenv.config();
+
+// Get the environment variable values with defaults
+//const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || '';
+//const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || '';
+const SECRET_KEY = process.env.SECRET_KEY || '';
 
 export class PythonLambdaStack extends cdk.Stack {
   predictionLambda: lambda.DockerImageFunction;
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
 
-    // Create a new ECR repository
-    const ecrRepository = new ecr.Repository(this, 'ECRRepository', {
-      repositoryName: 'my-docker-repo',
-    });
+  constructor(scope: Construct, constructId: string, props?: cdk.StackProps) {
+    super(scope, constructId, props);
 
-    // Generate a unique identifier for the image asset using the stack's uniqueId
-    //const imageAssetId = `${this.stackName}Asset`;
+    this.buildLambdaFunc();
+  }
 
-    // const asset = new ecrAssets.DockerImageAsset(this, imageAssetId, {
-    //   directory: '.',
-    //   repository: ecrRepository, // Set the ECR repository for the Docker image asset
-    // });
-
-    const dockerfile = path.join(__dirname, "..", "..", "Dockerfile");
-
-    // An asset that represents a Docker image.
-    // The image will be created in build time and uploaded to an ECR repository.
-    const asset = new DockerImageAsset(this, `python-lambda`, {
-      directory: dockerfile,
-    });
+  buildLambdaFunc() {
+    const dockerfile = path.join(__dirname, '../ExampleDockerLambda');
+    console.log(dockerfile,SECRET_KEY)
 
     this.predictionLambda = new lambda.DockerImageFunction(this, 'DockerLambda', {
-      code: lambda.DockerImageCode.fromEcr(asset.repository, {
-        tag: 'latest',
-      }),
-      memorySize: 256,
-      timeout: cdk.Duration.seconds(10),
-    });
+      functionName: 'docker-lambda',
+      code: lambda.DockerImageCode.fromImageAsset(dockerfile),
+      memorySize: 512,
+      timeout:cdk.Duration.seconds(900),
+      environment:{
 
-    // Define any additional resources or configurations for your Lambda function
-    // ...
-
-    // Output the Lambda function's ARN
-    new cdk.CfnOutput(this, 'LambdaFunctionArn', {
-      value: this.predictionLambda.functionArn,
-    });
+        //AWS_ACCESS_KEY_ID: AWS_ACCESS_KEY_ID,
+       // AWS_SECRET_ACCESS_KEY: AWS_SECRET_ACCESS_KEY,
+        SECRET_KEY: SECRET_KEY,
+        
+       },
+      });
   }
 }
+
+
+
+
